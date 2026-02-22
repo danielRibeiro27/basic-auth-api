@@ -1,0 +1,60 @@
+{
+
+  "name": "basic-auth-api",
+
+  "version": "1.0.0",
+
+  "description": "authn + authz api",
+
+  "homepage": "https://github.com/danielRibeiro27/basic-auth-api#readme",
+
+  "bugs": {
+
+    "url": "https://github.com/danielRibeiro27/basic-auth-api/issues"
+
+  },
+
+  "repository": {
+
+    "type": "git",
+
+    "url": "git+https://github.com/danielRibeiro27/basic-auth-api.git"
+
+  },
+
+  "license": "ISC",
+
+  "author": "",
+
+  "type": "module",
+
+  "main": "index.js",
+
+  "scripts": {
+
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+
+  },
+
+  "dependencies": {
+
+    "bcrypt": "^6.0.0",
+
+    "express": "^5.2.1",
+
+    "express-openid-connect": "^2.19.4",
+
+    "jest": "^30.2.0",
+
+    "supertest": "^7.2.2"
+
+  },
+
+  "devDependencies": {
+
+    "@jest/globals": "^30.2.0"
+
+  }
+
+}
+
