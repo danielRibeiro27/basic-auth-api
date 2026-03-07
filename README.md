@@ -291,3 +291,8 @@ Common real-world stack: **SAML** for legacy SSO, **OIDC** for modern apps, **SC
   [https://www.youtube.com/watch?v=ApStxeFJfJk](https://www.youtube.com/watch?v=ApStxeFJfJk)
 * YouTube — “Single Sign-On (SSO) Explained in 10 Minutes | SAML, OIDC & SCIM” (ByteMonk)
   [https://www.youtube.com/watch?v=5KChrGWFcpk](https://www.youtube.com/watch?v=5KChrGWFcpk)
+
+### Security
+
+* Youtube - "O que ninguem te ensinou sobre armazenar senhas no banco de dados" (Renato Augusto)
+  [https://www.youtube.com/watch?v=VW2mywTTz80)
