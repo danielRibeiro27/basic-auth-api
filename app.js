@@ -1,97 +1,128 @@
 //require its a import module 
-import express from 'express'; //its imported as a event object
+import express from 'express';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
-export default function createApp(storage){
+export default function createApp(storage) {
+  const app = express();
 
-  const app = express(); //instantiate the express application by calling its function
+  app.use(express.json());
 
-  //users
-  //id (uuid)
-  //email (unique)
-  //password_hash
-  //created_at
+  async function authenticateApiKey(req, res, next) {
+    const rawKey = req.headers['x-api-key'];
+    if (!rawKey) {
+      return res.status(401).send('Unauthorized');
+    }
 
-  //api_keys
-  //id (uuid)
-  //user_id (fk)
-  //key_hash (SHA-256)
-  //prefix (first 8 chars of the raw key, for support/logging)
-  //created_at
-  //revoked_at (nullable)
-  //last_used_at (nullable)
+    const hash = crypto.createHash('sha256').update(rawKey).digest('base64');
+    const keyRecord = await storage.getApiKeyByHash(hash);
 
-  //rules
-  //Raw passwords are never stored
-  //Raw API keys are never stored
-  //Raw API key is returned once at creation time
+    if (!keyRecord) {
+      return res.status(401).send('Unauthorized');
+    }
 
-  //app.get its a event listener
-  //(req,res) its a callback function
+    if (keyRecord.revoked_at !== null) {
+      return res.status(401).send('Unauthorized');
+    }
+
+    req.auth = { userId: keyRecord.userId };
+    req.apiKeyHash = hash;
+    await storage.updateLastUsed(hash);
+    next();
+  }
+
   app.get('/', (req, res) => {
     res.send('Hello World!');
   });
 
-  //login
-  app.post('/login', async (req, res) =>{
-    //asks for credentials using http basic auth (header:WWW-Authenticate: Basic realm="example")
-    if(req.headers['authorization'] === undefined){
+  app.post('/login', async (req, res) => {
+    if (req.headers['authorization'] === undefined) {
       res.set('WWW-Authenticate', 'Basic realm="simple"');
       return res.status(401).send('Unauthorized');
     }
 
-    if(!req.headers['authorization'].startsWith('Basic ')){
+    if (!req.headers['authorization'].startsWith('Basic ')) {
       return res.status(400).send('Bad Request');
     }
 
-    //fetch user by email
     const credentials = decodeCredentials(req.headers.authorization);
+    if (!credentials) {
+      return res.status(400).send('Bad Request');
+    }
+
     const user = await storage.getUserByLogin(credentials.login);
-    
-    //verify password hash --pass has to be hashed
-    if(!user || !bcrypt.compare(credentials.password, user.password)){
+
+    if (!user || !(await bcrypt.compare(credentials.password, user.password))) {
       return res.status(401).send('Unauthorized');
     }
 
-    //generate raw api key
     const rawApiKey = generateRawApiKey();
-    const hashedApiKey = await crypto.createHash('sha256').update(rawApiKey).digest('base64');
-    const hashedApiKeyTest = await crypto.createHash('sha256').update(rawApiKey).digest('base64');
-    const inserted = await storage.insertHashedApiKey(hashedApiKey);
+    const keyHash = crypto.createHash('sha256').update(rawApiKey).digest('base64');
+    const prefix = rawApiKey.substring(0, 8);
 
-    //status codes: 401 (unauthorized), 400 (bad request), 500 (internal), 200 (ok)
-    res.status(200).send({apiKey: rawApiKey});
+    await storage.insertApiKey({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      keyHash,
+      prefix,
+      createdAt: new Date().toISOString(),
+    });
+
+    res.status(200).send({ apiKey: rawApiKey });
   });
 
-  app.post('/revoke', (req, res) =>{
-    res.send('API Key revoked.')
-  })
-
-  app.get('/sensitive', (req, res) =>{
-    //requires api key on header X-API-Key
-    //hash presented key
-    //look up api key on storage
-    //update last used on success
-
-    //status codes: 401 (unauthorized), 400 (bad request), 500 (internal), 200 (ok)
-    res.send("Here's your sensitive data.");
+  app.post('/api-keys/revoke', authenticateApiKey, async (req, res) => {
+    await storage.revokeApiKey(req.apiKeyHash);
+    res.status(200).send({ revoked: true });
   });
 
-  app.post('/users', (req, res) => {
-    res.send("User created.");
+  app.get('/sensitive', authenticateApiKey, async (req, res) => {
+    res.status(200).send({ userId: req.auth.userId, message: "Here's your sensitive data." });
   });
 
-  function generateRawApiKey(size = 32, format = 'base64'){
+  app.post('/users', async (req, res) => {
+    const { email, password } = req.body ?? {};
+
+    if (!email || !password) {
+      return res.status(400).send('Bad Request');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const id = crypto.randomUUID();
+    const result = storage.insertUser({
+      id,
+      email,
+      password: passwordHash,
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!result.success) {
+      return res.status(409).send('Conflict');
+    }
+
+    res.status(201).send({ id, email });
+  });
+
+  function generateRawApiKey(size = 32, format = 'base64') {
     const buffer = crypto.randomBytes(size);
     return buffer.toString(format);
   }
 
-  function decodeCredentials(authHeader){
-    const base64credentials = authHeader.split(' ')[1];
-    const credentials = Buffer.from(base64credentials, 'base64').toString('utf-8');
-
-    return { login: credentials.split(':')[0], password: credentials.split(':')[1]}
+  function decodeCredentials(authHeader) {
+    try {
+      const base64credentials = authHeader.split(' ')[1];
+      const credentials = Buffer.from(base64credentials, 'base64').toString('utf-8');
+      const colonIndex = credentials.indexOf(':');
+      if (colonIndex === -1) {
+        return null;
+      }
+      return {
+        login: credentials.substring(0, colonIndex),
+        password: credentials.substring(colonIndex + 1),
+      };
+    } catch {
+      return null;
+    }
   }
 
   return app;
