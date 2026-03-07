@@ -48,7 +48,7 @@ export default function createApp(storage){
     const credentials = decodeCredentials(request.headers.authorization);
     const user = await storage.getUserByLogin(credentials.login); 
     
-    if(!user || await !bcrypt.compare(credentials.password, user.password)){
+    if(!user || !(await bcrypt.compare(credentials.password, user.password))){
       return response.status(401).send('Unauthorized');
     }
 
