@@ -25,6 +25,7 @@ describe('POST /login', () => {
             getUserByLogin: jest
             .fn()
             .mockResolvedValue({ id: 'user-id', login: 'user', password: hashedPassword }),
+            
             insertHashedApiKey: jest
             .fn()
             .mockResolvedValue({success:true})
