@@ -33,38 +33,34 @@ export default function createApp(storage){
     res.send('Hello World!');
   });
 
-  //login
-  app.post('/login', async (req, res) =>{
-    //asks for credentials using http basic auth (header:WWW-Authenticate: Basic realm="example")
-    if(req.headers['authorization'] === undefined){
-      res.set('WWW-Authenticate', 'Basic realm="simple"');
-      return res.status(401).send('Unauthorized');
+  //receives credentials using http basic auth and returns an api key
+  //status codes: 401 (unauthorized), 400 (bad request), 500 (internal), 200 (ok)
+  app.post('/login', async (request, response) =>{
+    if(request.headers['authorization'] === undefined){
+      response.set('WWW-Authenticate', 'Basic realm="simple"'); //ask for credentials
+      return response.status(401).send('Unauthorized');
     }
 
-    if(!req.headers['authorization'].startsWith('Basic ')){
-      return res.status(400).send('Bad Request');
+    if(!request.headers['authorization'].startsWith('Basic ')){
+      return response.status(400).send('Bad Request');
     }
 
-    //fetch user by email
-    const credentials = decodeCredentials(req.headers.authorization);
-    const user = await storage.getUserByLogin(credentials.login);
+    const credentials = decodeCredentials(request.headers.authorization);
+    const user = await storage.getUserByLogin(credentials.login); 
     
-    //verify password hash --pass has to be hashed
-    if(!user || !bcrypt.compare(credentials.password, user.password)){
-      return res.status(401).send('Unauthorized');
+    if(!user || await !bcrypt.compare(credentials.password, user.password)){
+      return response.status(401).send('Unauthorized');
     }
 
-    //generate raw api key
     const rawApiKey = generateRawApiKey();
-    const hashedApiKey = await crypto.createHash('sha256').update(rawApiKey).digest('base64');
-    const hashedApiKeyTest = await crypto.createHash('sha256').update(rawApiKey).digest('base64');
-    const inserted = await storage.insertHashedApiKey(hashedApiKey);
+    const hashedApiKey = crypto.createHash('sha256').update(rawApiKey).digest('base64');
+    const apiKeyHasBeeninserted = await storage.insertHashedApiKey(hashedApiKey);
 
-    //status codes: 401 (unauthorized), 400 (bad request), 500 (internal), 200 (ok)
-    res.status(200).send({apiKey: rawApiKey});
+    if(apiKeyHasBeeninserted) response.status(200).send({apiKey: rawApiKey});
+    else response.status(500).send('Internal Server Error');
   });
 
-  app.post('/revoke', (req, res) =>{
+  app.post('/api-keys/revoke', (req, res) =>{
     res.send('API Key revoked.')
   })
 
