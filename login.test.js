@@ -19,7 +19,7 @@ describe('POST /login', () => {
         const storageStub = {
             getUserByLogin: jest
             .fn()
-            .mockResolvedValue({ id: 'user-id', login: 'user', password: hashedPassword }),
+            .mockResolvedValue({ id: 'user-id', email: 'user', password: hashedPassword }),
         };
 
         const app = createApp(storageStub);
@@ -49,7 +49,7 @@ describe('POST /login', () => {
         const storageStub = {
             getUserByLogin: jest
             .fn()
-            .mockResolvedValue({ id: 'user-id', login: 'user', password: hashedPassword }),
+            .mockResolvedValue({ id: 'user-id', email: 'user', password: hashedPassword }),
             insertApiKey: jest
             .fn()
             .mockResolvedValue({success:true})

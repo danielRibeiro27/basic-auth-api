@@ -95,10 +95,16 @@ export default function createApp(storage){
     try {
       const base64credentials = authHeader.split(' ')[1];
       const credentials = Buffer.from(base64credentials, 'base64').toString('utf-8');
-      if(!credentials.includes(':')){
+      const colonIndex = credentials.indexOf(':');
+      if(colonIndex < 1){
         return null;
       }
-      return { login: credentials.split(':')[0], password: credentials.split(':')[1] };
+      const login = credentials.substring(0, colonIndex);
+      const password = credentials.substring(colonIndex + 1);
+      if(!password){
+        return null;
+      }
+      return { login, password };
     } catch {
       return null;
     }
