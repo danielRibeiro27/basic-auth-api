@@ -15,7 +15,27 @@ describe('POST /login', () => {
             .expect('WWW-Authenticate', 'Basic realm="simple"');
     });
 
-    it.todo('should return 401 when credentials are invalid');
+    it('should return 401 when credentials are invalid', async () => {
+        const hashedPassword = await bcrypt.hash('correctPassword', 10);
+        
+        const storageStub = {
+            getUserByLogin: jest
+                .fn()
+                .mockResolvedValue({ id: 'user-id', login: 'user', password: hashedPassword }),
+        };
+
+        const app = createApp(storageStub);
+
+        const credentials = Buffer
+            .from('user:wrongPassword')
+            .toString('base64');
+
+        await request(app)
+            .post('/login')
+            .set('Authorization', `Basic ${credentials}`)
+            .expect(401);
+    });
+
     it.todo('should return 400 when authorization header is malformed');
 
     it('should return 200 with api key when Authorization header is valid', async () => {
