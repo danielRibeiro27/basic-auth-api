@@ -42,8 +42,6 @@
 
     "express": "^5.2.1",
 
-    "express-openid-connect": "^2.19.4",
-
     "jest": "^30.2.0",
 
     "supertest": "^7.2.2"
