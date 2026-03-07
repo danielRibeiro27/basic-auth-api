@@ -1,6 +1,8 @@
-import createApp from './app.js'; //import the app factory from app.js
+import createApp from './app.js';
+import { createStorage } from './storage.js';
 
-const app = createApp();
+const storage = createStorage();
+const app = createApp(storage);
 const port = 3000;
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
