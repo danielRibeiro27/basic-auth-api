@@ -60,7 +60,7 @@ Why: an IdP/SSO product must handle multiple clients, federation, tokens, consen
 ### `users`
 - `id` (uuid)
 - `email` (unique)
-- `password_hash`
+- `password`
 - `created_at`
 
 ### `api_keys`
@@ -86,7 +86,7 @@ Why: an IdP/SSO product must handle multiple clients, federation, tokens, consen
 - `POST /login` — Basic Auth, issues a new API key
 
 ### Protected (API key required)
-- `GET /me`
+- `GET /sensitive`
 - `POST /api-keys/revoke`
 
 ---
