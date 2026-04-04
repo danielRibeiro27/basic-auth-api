@@ -1,38 +1,17 @@
 # basic-auth-api — Authn vs Authz Board
 Simple api with basic authentication and api key management.
 
-## 0) Quick onboarding
-If this is your first time in the project, follow this exact order.
+## 0) How to run
+Just run the docker image and it will run a battery of tests (expect 8 tests passed requests with 200 OK, 201 CREATED, 200 OK and 200 OK)
 
-### Prerequisites
-- Node.js 20+ installed
-- npm installed
+#### 0.1) Build
+docker build -t basic-auth-api .
 
-### Install dependencies
-From project root, run:
+#### 0.2) Run Jest + Newman
+docker run --rm basic-auth-api
 
-```bash 
-npm install 
-```
-
-### Start the API
-From project root, run:
-
-```bash
-npm start
-```
-
-expected output:
-```text
-Example app listening on port 3000
-```
-
-### run:
-```bash
-npm run test:api
-```
-
-expected to run a battery of requests
+#### 0.3) (Optional) Just start the server and tests it yourself
+docker run --rm -p 3000:3000 --entrypoint node basic-auth-api src/index.js
 
 ## 1) Project goal
 
