@@ -17,6 +17,29 @@ docker run --rm -p 3000:3000 --entrypoint node basic-auth-api src/index.js
 
 Build the simplest possible **real-world** authentication + authorization system.
 
-### Notes for study and recruiters
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js (ESM) |
+| Framework | Express 5 |
+| Password hashing | bcrypt |
+| In-memory storage | Plain JS `Map` (no database) |
+| Unit / integration tests | Jest + Supertest |
+| API / contract tests | Newman (Postman CLI) |
+| Containerization | Docker |
+
+---
+
+## Core Concepts
+
+### Authentication vs Authorization: auth HTTP basic auth on `POST /login`. authz via API key
+### API Key security: api key SHA-256 hash, password with bcrypt
+### Test coverage and automation: jest for integration tests and postman collections for e2e
+
+## Notes for study and recruiters
+
 All technical notes from item 2 onward were moved to [TECHNICAL_NOTES.md](TECHNICAL_NOTES.md).
 ---
