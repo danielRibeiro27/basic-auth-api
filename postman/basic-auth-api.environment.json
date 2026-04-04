@@ -1,0 +1,16 @@
+{
+	"id": "efab1111-339d-49d1-85d3-12395ac7b2df",
+	"name": "development",
+	"values": [
+		{
+			"key": "NODE_ENV",
+			"value": "development ",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"color": null,
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2026-04-04T00:40:03.331Z",
+	"_postman_exported_using": "Postman/12.4.6-260403-1331"
+}

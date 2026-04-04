@@ -1,0 +1,225 @@
+openapi: 3.1.0
+info:
+  title: basic-auth-api
+  version: 1.0.0
+  summary: API de autenticacao com Basic Auth para login e API key para acesso protegido.
+  description: |
+    Esta especificacao documenta o comportamento atual implementado pela aplicacao.
+
+    Observacoes importantes:
+    - O endpoint `POST /login` recebe credenciais via header `Authorization: Basic ...`.
+    - O endpoint `GET /sensitive/hello` exige o header `X-API-Key` no formato `prefix.valor`.
+    - Os endpoints `POST /users` e `POST /api-keys/revoke` existem, mas atualmente sao stubs e nao possuem validacao de payload.
+    - Fora dos ambientes `development` e `test`, requisicoes HTTP para `/sensitive/*` sao redirecionadas para HTTPS.
+servers:
+  - url: http://localhost:3000
+    description: Servidor local padrao
+tags:
+  - name: Health
+  - name: Authentication
+  - name: Protected
+  - name: Users
+  - name: API Keys
+paths:
+  /:
+    get:
+      tags:
+        - Health
+      summary: Resposta basica da API
+      operationId: getRoot
+      responses:
+        '200':
+          description: Resposta simples indicando que a API esta no ar.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Hello World!
+
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: Autentica usuario com HTTP Basic e emite uma API key
+      operationId: login
+      description: |
+        Espera um header `Authorization` com esquema `Basic` contendo `login:password` em Base64.
+        Em caso de sucesso, retorna uma API key em texto bruto uma unica vez.
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '200':
+          description: Credenciais validas e API key emitida com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccessResponse'
+              examples:
+                success:
+                  value:
+                    apiKey: prefix.550e8400-e29b-41d4-a716-446655440000
+        '400':
+          description: Header `Authorization` presente, mas sem o prefixo `Basic `.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PlainTextMessage'
+              examples:
+                badRequest:
+                  value: Bad Request
+        '401':
+          description: Header ausente ou credenciais invalidas.
+          headers:
+            WWW-Authenticate:
+              description: Presente quando o header Authorization nao foi enviado.
+              schema:
+                type: string
+                example: Basic realm="simple"
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PlainTextMessage'
+              examples:
+                unauthorized:
+                  value: Unauthorized
+        '500':
+          description: Falha ao persistir a nova API key.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PlainTextMessage'
+              examples:
+                storageFailure:
+                  value: The API Key could not be generated. Please try again later.
+
+  /sensitive/hello:
+    get:
+      tags:
+        - Protected
+      summary: Retorna um dado protegido por API key
+      operationId: getSensitiveHello
+      description: |
+        Requer o header `X-API-Key`. A chave deve estar no formato `prefix.valor`.
+        Fora dos ambientes `development` e `test`, uma requisicao HTTP insegura para esta rota recebe redirecionamento 301 para HTTPS.
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ApiKeyHeader'
+      responses:
+        '200':
+          description: API key valida.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Here's your sensitive data.
+        '301':
+          description: Requisicao HTTP redirecionada para HTTPS.
+          headers:
+            Location:
+              description: URL HTTPS de destino.
+              schema:
+                type: string
+                format: uri
+        '400':
+          description: API key enviada em formato invalido.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PlainTextMessage'
+              examples:
+                badRequest:
+                  value: Bad Request
+        '401':
+          description: API key ausente, invalida ou revogada.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PlainTextMessage'
+              examples:
+                unauthorized:
+                  value: Unauthorized
+
+  /api-keys/revoke:
+    post:
+      tags:
+        - API Keys
+      summary: Endpoint de revogacao atualmente stubado
+      operationId: revokeApiKey
+      description: |
+        Endpoint ja exposto pela aplicacao, mas ainda sem implementacao real de revogacao.
+        No estado atual, nao exige autenticacao nem payload e sempre responde com sucesso.
+      responses:
+        '200':
+          description: Resposta fixa do stub atual.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: API Key revoked.
+
+  /users:
+    post:
+      tags:
+        - Users
+      summary: Endpoint de criacao de usuario atualmente stubado
+      operationId: createUser
+      description: |
+        Endpoint ja exposto pela aplicacao, mas ainda sem implementacao real de criacao de usuario.
+        No estado atual, nao processa corpo JSON nem valida campos.
+      responses:
+        '200':
+          description: Resposta fixa do stub atual.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: User created.
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Credenciais de login enviadas no header Authorization.
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key no formato `prefix.valor`.
+  parameters:
+    AuthorizationHeader:
+      name: Authorization
+      in: header
+      required: true
+      description: Header HTTP Basic contendo `Basic base64(login:password)`.
+      schema:
+        type: string
+        example: Basic dXNlcjpwYXNz
+    ApiKeyHeader:
+      name: X-API-Key
+      in: header
+      required: true
+      description: API key enviada pelo cliente no formato `prefix.valor`.
+      schema:
+        type: string
+        pattern: '^[^.]+\.[^.]+$'
+        example: prefix.550e8400-e29b-41d4-a716-446655440000
+  schemas:
+    LoginSuccessResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - apiKey
+      properties:
+        apiKey:
+          type: string
+          description: API key bruta retornada ao cliente apos autenticacao bem-sucedida.
+          example: prefix.550e8400-e29b-41d4-a716-446655440000
+    PlainTextMessage:
+      type: string
+      examples:
+        - Unauthorized
+        - Bad Request
