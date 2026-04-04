@@ -1,9 +1,9 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
-import createApp from './app.js';
+import createApp from '../src/app.js';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
-//===login
 describe('POST /login', () => { 
 
     it('should return 401 when no auth header is provided', async () => {
@@ -19,7 +19,7 @@ describe('POST /login', () => {
         const hashedPassword = await bcrypt.hash('correctPassword', 10);
         
         const storageStub = {
-            getUserByLogin: jest
+            getUserByLoginAsync: jest
                 .fn()
                 .mockResolvedValue({ id: 'user-id', login: 'user', password: hashedPassword }),
         };
@@ -36,19 +36,17 @@ describe('POST /login', () => {
             .expect(401);
     });
 
-    it.todo('should return 400 when authorization header is malformed');
-
     it('should return 200 with api key when Authorization header is valid', async () => {
         const hashedPassword = await bcrypt.hash('pass', 10); //500-1000ms
         
         const storageStub = {
-            getUserByLogin: jest
+            getUserByLoginAsync: jest
             .fn()
             .mockResolvedValue({ id: 'user-id', login: 'user', password: hashedPassword }),
             
-            insertHashedApiKey: jest
+            createApiKeyAsync: jest
             .fn()
-            .mockResolvedValue({success:true})
+            .mockImplementation((param) => Promise.resolve(param))
         };
 
         const app = createApp(storageStub);
@@ -64,21 +62,42 @@ describe('POST /login', () => {
 
         expect(response.body).toHaveProperty('apiKey');
         expect(response.body.apiKey).toBeTruthy();
-        expect(storageStub.getUserByLogin)
+        expect(storageStub.getUserByLoginAsync)
             .toHaveBeenCalledWith('user');
-        });
+    });
 });
 
-//===protected
-//request with no api key should return 401
-//request with invalid api key should return 401
-//request with revoked api key should return 401
-//request with valid key should return 200 and req.auth.userId
+describe('sensitive', () => {
+    it('request with invalid api key should return 401', async () => {
+        const invalidApiKey = 'prefix.invalid_api_key';
+        const storageStub = {
+            getUnrevokedApiKeyByPrefixedHashedKey: jest.fn().mockResolvedValue(null)
+        };
 
-//===persistance
-//storage user.email should be unique
-//storage api key should only has hash
-//storage shoudl update last_used_at on use
+        const app = createApp(storageStub);
+        await request(app)
+            .get('/sensitive/hello')
+            .set('X-Api-Key', invalidApiKey)
+            .expect(401);
+    });
 
-//===security
-//http should be redirected to https
+    it('request with valid api key should return 200', async () => {
+        const prefix = 'prefix';
+        const randomUUID = crypto.randomUUID();
+        const rawApiKey = `${prefix}.${randomUUID}`;
+        const storedHashedKey = crypto.createHash('sha256')
+                                    .update(randomUUID)
+                                    .digest('hex');
+        const finalStoredKey = `${prefix}.${storedHashedKey}`;
+        const storageStub = {
+            getUnrevokedApiKeyByPrefixedHashedKey: jest.fn().mockResolvedValue({ userId: 'user-id', prefixedKeyHash: finalStoredKey}),
+            updateApiKeyAsync: jest.fn().mockResolvedValue(null)
+        };
+
+        const app = createApp(storageStub);
+        await request(app)
+            .get('/sensitive/hello')
+            .set('X-Api-Key', rawApiKey)
+            .expect(200);
+    })
+});

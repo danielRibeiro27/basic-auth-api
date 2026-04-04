@@ -31,6 +31,10 @@
   "main": "index.js",
 
   "scripts": {
+    "test:api": "newman run postman/basic-auth-api.collection.json -e postman/basic-auth-api.environment.json",
+    "start": "node src/index.js",
+
+    "start:debug": "NODE_ENV=development node --inspect=9229 src/index.js",
 
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
 
@@ -50,7 +54,9 @@
 
   "devDependencies": {
 
-    "@jest/globals": "^30.2.0"
+    "@jest/globals": "^30.2.0",
+
+    "newman": "^6.2.2"
 
   }
 
