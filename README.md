@@ -35,21 +35,11 @@ Build the simplest possible **real-world** authentication + authorization system
 
 ## Core Concepts
 
-### Authentication vs Authorization
-- **Authentication (Authn)** — proves identity: *who is calling?* Implemented via HTTP Basic Auth on `POST /login`.
-- **Authorization (Authz)** — enforces permissions: *what are they allowed to do?* Implemented via an API key header on every protected route.
+### Authentication vs Authorization: auth HTTP basic auth on `POST /login`. authz via API key
+### API Key security: api key SHA-256 hash, password with bcrypt
+### Test coverage and automation: jest for integration tests and postman collections for e2e
 
-### API Key security
-- Raw keys are **never stored**; only a SHA-256 hash (with an 8-char prefix for lookup support) is persisted.
-- The raw key is returned **once** at creation time and is the client's responsibility to store.
-- Constant-time comparison is used when validating keys to prevent timing attacks.
+## Notes for study and recruiters
 
-### HTTP Basic Auth
-- Credentials (username + password) are base64-encoded in the `Authorization: Basic <token>` header.
-- Used exclusively on `POST /login`; all other protected routes use the issued API key.
-
----
-
-### Notes for study and recruiters
 All technical notes from item 2 onward were moved to [TECHNICAL_NOTES.md](TECHNICAL_NOTES.md).
 ---
