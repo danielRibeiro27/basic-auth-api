@@ -2,10 +2,10 @@
 Simple api with basic authentication and api key management.
 
 ## 0) How to run
-Just run the docker image and it will run a battery of tests (expect 8 tests passed requests with 200 OK, 201 CREATED, 200 OK and 200 OK)
+Just install docker and run the docker image and it will run a battery of tests (expect 8 tests passed requests with 200 OK, 201 CREATED, 200 OK and 200 OK)
 
 #### 0.1) Build
-docker build -t basic-auth-api .
+docker -v >/dev/null 2>&1 && docker build -t basic-auth-api . || echo "install docker"
 
 #### 0.2) Run Jest + Newman
 docker run --rm basic-auth-api
